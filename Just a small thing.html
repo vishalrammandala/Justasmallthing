@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        h2 {
+            color: #444;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            line-height: 1.4;
+        }
+
+        .love-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.3);
+        }
+
+        .love-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.4);
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+        }
+
+        .option:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            transform: translateX(5px);
+        }
+
+        .option.selected {
+            background: #2196f3;
+            color: white;
+            border-color: #1976d2;
+        }
+
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .next-button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .next-button.enabled {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .next-button.enabled:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .question-counter {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .final-message {
+            font-size: 1.3em;
+            color: #4CAF50;
+            margin-top: 20px;
+        }
+
+        /* Final Page Animations */
+        .animated-message {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-title {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52, #ff9a56, #ffad56);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+            margin-bottom: 30px;
+        }
+
+        @keyframes titleGlow {
+            from { filter: drop-shadow(0 0 5px rgba(255, 107, 107, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 107, 107, 0.8)); }
+        }
+
+        .love-message {
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .message-line {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slideInFade 1s ease-out forwards;
+            font-size: 1.1em;
+            margin: 8px 0;
+            color: #333;
+        }
+
+        .message-line:nth-child(1) { animation-delay: 0.5s; }
+        .message-line:nth-child(2) { animation-delay: 1s; }
+        .message-line:nth-child(3) { animation-delay: 1.5s; }
+        .message-line:nth-child(4) { animation-delay: 2s; }
+        .message-line:nth-child(5) { animation-delay: 2.5s; }
+        .message-line:nth-child(6) { animation-delay: 3s; }
+        .message-line:nth-child(7) { animation-delay: 3.5s; }
+        .message-line:nth-child(8) { animation-delay: 4s; }
+        .message-line:nth-child(9) { animation-delay: 4.5s; }
+        .message-line:nth-child(10) { animation-delay: 5s; }
+        .message-line:nth-child(11) { animation-delay: 5.5s; }
+        .message-line:nth-child(12) { animation-delay: 6s; }
+
+        @keyframes slideInFade {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+            font-size: 1.2em;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .emphasis {
+            color: #e91e63;
+            font-weight: bold;
+            transform: scale(1.1);
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        .final-line {
+            font-size: 1.3em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .floating-hearts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 2em;
+            animation: floatHeart 8s linear infinite;
+            opacity: 0.7;
+        }
+
+        .heart:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .heart:nth-child(2) { left: 20%; animation-delay: 1s; }
+        .heart:nth-child(3) { left: 30%; animation-delay: 2s; }
+        .heart:nth-child(4) { left: 70%; animation-delay: 3s; }
+        .heart:nth-child(5) { left: 80%; animation-delay: 4s; }
+        .heart:nth-child(6) { left: 90%; animation-delay: 5s; }
+
+        @keyframes floatHeart {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .sparkles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 1.5em;
+            animation: sparkleAnimation 3s ease-in-out infinite;
+        }
+
+        .sparkle:nth-child(1) { 
+            top: 20%; 
+            left: 15%; 
+            animation-delay: 0.5s; 
+        }
+        .sparkle:nth-child(2) { 
+            top: 30%; 
+            right: 10%; 
+            animation-delay: 1.5s; 
+        }
+        .sparkle:nth-child(3) { 
+            bottom: 40%; 
+            left: 10%; 
+            animation-delay: 2.5s; 
+        }
+        .sparkle:nth-child(4) { 
+            bottom: 30%; 
+            right: 15%; 
+            animation-delay: 3.5s; 
+        }
+        .sparkle:nth-child(5) { 
+            top: 50%; 
+            left: 50%; 
+            animation-delay: 4.5s; 
+        }
+
+        @keyframes sparkleAnimation {
+            0%, 100% { 
+                opacity: 0; 
+                transform: scale(0) rotate(0deg); 
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.2) rotate(180deg); 
+            }
+        }
+
+        .restart-btn {
+            animation: buttonPulse 2s ease-in-out infinite;
+            animation-delay: 7s;
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 8px 25px rgba(238, 90, 82, 0.5); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Landing Page -->
+        <div class="page active" id="page-0">
+            <h1>Welcome!</h1>
+            <button class="love-button" onclick="startQuiz()">Hi Love ❤️</button>
+        </div>
+
+        <!-- Question Pages 1-10 -->
+        <div class="page" id="page-1">
+            <div class="progress-bar"><div class="progress-fill" style="width: 10%"></div></div>
+            <div class="question-counter">Question 1 of 10</div>
+            <h2 id="question-1">If you had to pick an activity for us to do together, which one do you think he'd prefer?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 1, 'movie')">Movie night – He'd love to cuddle up with you, watching movies while sharing snacks and enjoying the comfort of being close.</div>
+                <div class="option" onclick="selectOption(this, 1, 'shopping')">Shopping – He'd enjoy watching you pick out new things, happy just being by your side while you enjoy finding something fun.</div>
+            </div>
+            <div class="note" id="note-1" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-1" onclick="showNote(1)">Next</button>
+        </div>
+
+        <div class="page" id="page-2">
+            <div class="progress-bar"><div class="progress-fill" style="width: 20%"></div></div>
+            <div class="question-counter">Question 2 of 10</div>
+            <h2 id="question-2">Do you think he would sacrifice something important for you?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 2, 'happiness')">Yes – He'd give up something valuable to make sure you're happy, because seeing you smile means the world to him.</div>
+                <div class="option" onclick="selectOption(this, 2, 'priority')">Yes – He'd put your needs first, even if it meant making a difficult choice, because you mean more to him than anything else.</div>
+            </div>
+            <div class="note" id="note-2" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-2" onclick="showNote(2)">Next</button>
+        </div>
+
+        <div class="page" id="page-3">
+            <div class="progress-bar"><div class="progress-fill" style="width: 30%"></div></div>
+            <div class="question-counter">Question 3 of 10</div>
+            <h2 id="question-3">How do you think he would show you how much he loves you, even in the smallest things?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 3, 'gestures')">He'd constantly remind you with little gestures, like thoughtful surprises, sweet words, or simply holding your hand when you need it most.</div>
+                <div class="option" onclick="selectOption(this, 3, 'support')">He'd show you his love by being there through both the good and tough times, offering his constant support and affection no matter what.</div>
+            </div>
+            <div class="note" id="note-3" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-3" onclick="showNote(3)">Next</button>
+        </div>
+
+        <div class="page" id="page-4">
+            <div class="progress-bar"><div class="progress-fill" style="width: 40%"></div></div>
+            <div class="question-counter">Question 4 of 10</div>
+            <h2 id="question-4">When it comes to trust, what do you think he would do to make sure you always feel secure with him?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 4, 'honesty')">He'd always be honest with you, no matter how small or big the situation is, because keeping your trust matters more than anything to him.</div>
+                <div class="option" onclick="selectOption(this, 4, 'loyalty')">He'd prove his loyalty through actions every single day, making sure you never doubt where you stand in his heart.</div>
+            </div>
+            <div class="note" id="note-4" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-4" onclick="showNote(4)">Next</button>
+        </div>
+
+        <div class="page" id="page-5">
+            <div class="progress-bar"><div class="progress-fill" style="width: 50%"></div></div>
+            <div class="question-counter">Question 5 of 10</div>
+            <h2 id="question-5">When you think about the future, how much do you trust that he'll keep his promises and build a beautiful life with you?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 5, 'dreams')">He'd work hard every day to turn those promises into reality, because building a future with you is his biggest dream.</div>
+                <div class="option" onclick="selectOption(this, 5, 'promises')">He'd never make a promise he couldn't keep, because your trust means more to him than anything else.</div>
+            </div>
+            <div class="note" id="note-5" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-5" onclick="showNote(5)">Next</button>
+        </div>
+
+        <div class="page" id="page-6">
+            <div class="progress-bar"><div class="progress-fill" style="width: 60%"></div></div>
+            <div class="question-counter">Question 6 of 10</div>
+            <h2 id="question-6">If he ever makes you angry, do you think he'll stop trying to make you smile?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 6, 'yes')">Yes</div>
+                <div class="option" onclick="selectOption(this, 6, 'no')">No</div>
+            </div>
+            <div class="note" id="note-6" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-6" onclick="showNote(6)">Next</button>
+        </div>
+
+        <div class="page" id="page-7">
+            <div class="progress-bar"><div class="progress-fill" style="width: 70%"></div></div>
+            <div class="question-counter">Question 7 of 10</div>
+            <h2 id="question-7">If you both had a free weekend together, what do you think he would do?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 7, 'adventure')">Adventure</div>
+                <div class="option" onclick="selectOption(this, 7, 'cozy')">Cozy time</div>
+            </div>
+            <div class="note" id="note-7" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-7" onclick="showNote(7)">Next</button>
+        </div>
+
+        <div class="page" id="page-8">
+            <div class="progress-bar"><div class="progress-fill" style="width: 80%"></div></div>
+            <div class="question-counter">Question 8 of 10</div>
+            <h2 id="question-8">If you shared your biggest dream with him, what would he do?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 8, 'support')">Support you</div>
+                <div class="option" onclick="selectOption(this, 8, 'make_happen')">Make it happen</div>
+            </div>
+            <div class="note" id="note-8" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-8" onclick="showNote(8)">Next</button>
+        </div>
+
+        <div class="page" id="page-9">
+            <div class="progress-bar"><div class="progress-fill" style="width: 90%"></div></div>
+            <div class="question-counter">Question 9 of 10</div>
+            <h2 id="question-9">When you look back, were you truly happy with him?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 9, 'yes')">Yes</div>
+                <div class="option" onclick="selectOption(this, 9, 'no')">No</div>
+            </div>
+            <div class="note" id="note-9" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-9" onclick="showNote(9)">Next</button>
+        </div>
+
+        <div class="page" id="page-10">
+            <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+            <div class="question-counter">Question 10 of 10</div>
+            <h2 id="question-10">Do you truly want to marry him and spend your entire life with him?</h2>
+            <div class="options">
+                <div class="option" onclick="selectOption(this, 10, 'yes')">Yes</div>
+                <div class="option" onclick="selectOption(this, 10, 'no')">No</div>
+                <div class="option" onclick="selectOption(this, 10, 'maybe')">Maybe</div>
+            </div>
+            <div class="note" id="note-10" style="display: none;">
+                <!-- Note will be populated based on selection -->
+            </div>
+            <button class="next-button" id="next-10" onclick="finishQuiz()">Finish</button>
+        </div>
+
+        <!-- Final Page -->
+        <div class="page" id="final-page">
+            <div class="animated-message">
+                <div class="floating-hearts">
+                    <div class="heart">💖</div>
+                    <div class="heart">💕</div>
+                    <div class="heart">💗</div>
+                    <div class="heart">💝</div>
+                    <div class="heart">💓</div>
+                    <div class="heart">💖</div>
+                </div>
+                
+                <h1 class="final-title">My Love Letter to You</h1>
+                
+                <div class="love-message">
+                    <p class="message-line">I might not always know the perfect words to express everything in my heart,</p>
+                    <p class="message-line">but I want you to know this:</p>
+                    <p class="message-line highlight">you are the only one for me.</p>
+                    <p class="message-line">Every thought, every dream, every beat of my heart revolves around you.</p>
+                    <p class="message-line">I'm honestly obsessed with you—not in a fleeting way,</p>
+                    <p class="message-line">but in the way that every moment without you feels incomplete.</p>
+                    <p class="message-line emphasis">I need you, I love you,</p>
+                    <p class="message-line">and I promise to cherish you, protect you,</p>
+                    <p class="message-line">and make you feel as special as you truly are,</p>
+                    <p class="message-line">for the rest of our lives.</p>
+                    <p class="message-line highlight">You are my everything,</p>
+                    <p class="message-line final-line">and I want you to always know how deeply and endlessly I love you.</p>
+                </div>
+                
+                <div class="sparkles">
+                    <div class="sparkle">✨</div>
+                    <div class="sparkle">⭐</div>
+                    <div class="sparkle">✨</div>
+                    <div class="sparkle">⭐</div>
+                    <div class="sparkle">✨</div>
+                </div>
+            </div>
+            
+            <button class="love-button restart-btn" onclick="restartQuiz()" style="margin-top: 40px;">
+                Start Over 💕
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        let selectedAnswers = {};
+        let noteShown = {};
+
+        function startQuiz() {
+            showPage(1);
+        }
+
+        function showPage(pageNum) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show target page
+            document.getElementById(`page-${pageNum}`).classList.add('active');
+            currentPage = pageNum;
+        }
+
+        function selectOption(element, questionNum, optionType = null) {
+            // Remove selection from all options in this question
+            element.parentElement.querySelectorAll('.option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select clicked option
+            element.classList.add('selected');
+            
+            // Store the answer with option type
+            selectedAnswers[questionNum] = {
+                text: element.textContent,
+                type: optionType
+            };
+            
+            // Set the appropriate note based on the option selected
+            const noteElement = document.getElementById(`note-${questionNum}`);
+            let noteText = "";
+            
+            // Define all notes for each question
+            if (questionNum === 1) {
+                if (optionType === 'movie') {
+                    noteText = "Because nothing beats a cozy night in with you. A movie, some snacks, and my favorite person next to me—that's my perfect night.";
+                } else if (optionType === 'shopping') {
+                    noteText = "I might not be the biggest fan of shopping, but I love spending time with you and seeing that smile on your face when you find something you love.";
+                }
+            } else if (questionNum === 2) {
+                if (optionType === 'happiness') {
+                    noteText = "Your happiness is everything to me, and I'd sacrifice whatever it takes to see you smile. That's what love is about.";
+                } else if (optionType === 'priority') {
+                    noteText = "I'll always put you first, because you deserve all the love and attention I can give. Nothing else matters when it comes to making you feel loved and cared for.";
+                }
+            } else if (questionNum === 3) {
+                if (optionType === 'gestures') {
+                    noteText = "It's the little things that count. I'll always show you my love through the everyday moments that matter the most to you.";
+                } else if (optionType === 'support') {
+                    noteText = "My love for you isn't just in the big gestures—it's in being there for you, through every moment, with all my heart.";
+                }
+            } else if (questionNum === 4) {
+                if (optionType === 'honesty') {
+                    noteText = "Your trust is my biggest treasure, and I'll never do anything to lose it. I'll always choose honesty, because you deserve nothing less.";
+                } else if (optionType === 'loyalty') {
+                    noteText = "I'll show you through everything I do that my heart belongs only to you, and nothing will ever change that.";
+                }
+            } else if (questionNum === 5) {
+                if (optionType === 'dreams') {
+                    noteText = "Every plan I make includes you. I'll never stop working to give us the life you've always imagined.";
+                } else if (optionType === 'promises') {
+                    noteText = "If I promise it, I mean it. Our future matters to me more than words can ever say.";
+                }
+            } else if (questionNum === 6) {
+                if (optionType === 'yes') {
+                    noteText = "Really? You think I'd ever give up? Not a chance—I'd keep trying until you laugh, even if it takes all day!";
+                } else if (optionType === 'no') {
+                    noteText = "Exactly! I'd never stop trying because your smile is my biggest goal in life. No matter what, I'll make it happen.";
+                }
+            } else if (questionNum === 7) {
+                if (optionType === 'adventure') {
+                    noteText = "I'd plan something exciting—maybe a surprise trip or a fun day out—because seeing you happy and full of life is all I want.";
+                } else if (optionType === 'cozy') {
+                    noteText = "I'd make it warm and special with movies, snacks, and endless cuddles, because being close to you is my perfect weekend.";
+                }
+            } else if (questionNum === 8) {
+                if (optionType === 'support') {
+                    noteText = "I'd stand by you every step of the way, cheering you on, helping you whenever you need, because your dreams matter to me as much as mine.";
+                } else if (optionType === 'make_happen') {
+                    noteText = "I'd do everything in my power to help turn that dream into reality, because nothing makes me happier than seeing you succeed.";
+                }
+            } else if (questionNum === 9) {
+                if (optionType === 'yes') {
+                    noteText = "That means the world to me, because every moment I spent with you was to see that happiness on your face.";
+                } else if (optionType === 'no') {
+                    noteText = "If that's true, then all I want now is a chance to make the future so full of love that you'll never feel that way again.";
+                }
+            } else if (questionNum === 10) {
+                if (optionType === 'yes') {
+                    noteText = "Hearing you say yes fills my heart with more joy than I could ever put into words. I've dreamed of building a life with you, sharing every moment, every laugh, every tear, and every memory. To know that you want the same, that you want to walk through life with me by your side, makes me feel complete. You're my home, my heart, my everything, and I promise to love, cherish, and protect you for all my days.";
+                } else if (optionType === 'no') {
+                    noteText = "I never thought about the future before meeting you, but now I can't imagine it without you. So No is not an option—I will get you, no matter what it takes.";
+                } else if (optionType === 'maybe') {
+                    noteText = "If you're unsure, I'll spend every day showing you with my words, actions, and love that there is no one else I want to share my life with but you.";
+                }
+            }
+            
+            // Set the note text and show it immediately for questions 1-10
+            if (noteText && questionNum <= 10) {
+                noteElement.textContent = noteText;
+                noteElement.style.display = 'block';
+                noteShown[questionNum] = true;
+            }
+            
+            // Enable next button
+            const nextButton = document.getElementById(`next-${questionNum}`);
+            nextButton.classList.add('enabled');
+            
+            // For questions with immediate notes, change button text to Continue (except final question)
+            if (questionNum <= 9) {
+                nextButton.textContent = 'Continue';
+            } else if (questionNum === 10) {
+                nextButton.textContent = 'Finish';
+            }
+        }
+
+        function showNote(questionNum) {
+            if (!selectedAnswers[questionNum]) return;
+            
+            if (!noteShown[questionNum]) {
+                // Show the note
+                document.getElementById(`note-${questionNum}`).style.display = 'block';
+                noteShown[questionNum] = true;
+                
+                // Change button text to "Continue"
+                document.getElementById(`next-${questionNum}`).textContent = 'Continue';
+            } else {
+                // Move to next question
+                if (questionNum < 10) {
+                    showPage(questionNum + 1);
+                } else {
+                    finishQuiz();
+                }
+            }
+        }
+
+        function finishQuiz() {
+            if (!selectedAnswers[10]) return;
+            
+            if (!noteShown[10]) {
+                // Show the final note
+                document.getElementById(`note-10`).style.display = 'block';
+                noteShown[10] = true;
+                
+                // Change button text to "Complete"
+                document.getElementById(`next-10`).textContent = 'Complete';
+            } else {
+                // Show final page
+                document.getElementById('page-10').classList.remove('active');
+                document.getElementById('final-page').classList.add('active');
+            }
+        }
+
+        function restartQuiz() {
+            // Reset everything
+            currentPage = 0;
+            selectedAnswers = {};
+            noteShown = {};
+            
+            // Reset all selections and buttons
+            document.querySelectorAll('.option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            document.querySelectorAll('.next-button').forEach(button => {
+                button.classList.remove('enabled');
+                if (button.id !== 'next-10') {
+                    button.textContent = 'Next';
+                } else {
+                    button.textContent = 'Finish';
+                }
+            });
+            
+            // Hide all notes
+            document.querySelectorAll('.note').forEach(note => {
+                note.style.display = 'none';
+            });
+            
+            // Show first page
+            showPage(0);
+        }
+
+        // Customization functions for easy editing
+        function updateQuestion(questionNum, newQuestion) {
+            document.getElementById(`question-${questionNum}`).textContent = newQuestion;
+        }
+
+        function updateOptions(questionNum, newOptions) {
+            const optionsContainer = document.querySelector(`#page-${questionNum} .options`);
+            optionsContainer.innerHTML = '';
+            
+            newOptions.forEach(optionText => {
+                const option = document.createElement('div');
+                option.className = 'option';
+                option.textContent = optionText;
+                option.onclick = () => selectOption(option, questionNum);
+                optionsContainer.appendChild(option);
+            });
+        }
+
+        function updateNote(questionNum, newNote) {
+            document.getElementById(`note-${questionNum}`).textContent = newNote;
+        }
+
+        // Example usage of customization functions:
+        /*
+        updateQuestion(1, "What's your dream job?");
+        updateOptions(1, ["Teacher", "Doctor", "Artist", "Engineer"]);
+        updateNote(1, "Career dreams reflect our deepest passions and values!");
+        */
+    </script>
+</body>
+</html>
